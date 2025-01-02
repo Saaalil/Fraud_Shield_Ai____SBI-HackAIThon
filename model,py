@@ -1,0 +1,59 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score, precision_score, recall_score
+from sklearn.preprocessing import LabelEncoder
+from sklearn.impute import SimpleImputer
+
+# Load the dataset
+file_path = r'C:\Users\SALIL HIREMATH\Downloads\preprocessed_fraud_data_final (1).csv'  # Use raw string to handle backslashes
+data = pd.read_csv(file_path)
+
+# Drop irrelevant or empty columns
+columns_to_drop = ["Unnamed: 32", "Dummy Policy No", "POLICYRISKCOMMENCEMENTDATE", 
+                   "Date of Death", "INTIMATIONDATE", "Fraud Category.1"]
+data = data.drop(columns=[col for col in columns_to_drop if col in data.columns])
+
+# Separate target and features
+X = data.drop(columns=["Fraud Category"])
+y = data["Fraud Category"]
+
+# Encode categorical columns
+categorical_columns = X.select_dtypes(include=['object']).columns
+label_encoders = {}
+
+for col in categorical_columns:
+    le = LabelEncoder()
+    X[col] = le.fit_transform(X[col].astype(str))  # Convert to string to handle any non-string entries
+    label_encoders[col] = le
+
+# Identify numeric columns and handle missing values
+numeric_columns = X.select_dtypes(include=['float64', 'int64']).columns
+numeric_imputer = SimpleImputer(strategy='mean')
+X[numeric_columns] = numeric_imputer.fit_transform(X[numeric_columns])
+
+# Split data into training and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Train the Random Forest classifier
+rf_model = RandomForestClassifier(random_state=42, n_estimators=100)
+rf_model.fit(X_train, y_train)
+
+# Predict on the test set
+y_pred = rf_model.predict(X_test)
+
+# Evaluate the model
+accuracy = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred, average='weighted')
+recall = recall_score(y_test, y_pred, average='weighted')
+f1 = f1_score(y_test, y_pred, average='weighted')
+conf_matrix = confusion_matrix(y_test, y_pred)
+report = classification_report(y_test, y_pred)
+
+# Print metrics
+print("Accuracy:", accuracy)
+print("Precision:", precision)
+print("Recall:", recall)
+print("F1 Score:", f1)
+print("Confusion Matrix:\n", conf_matrix)
+print("Classification Report:\n", report)
